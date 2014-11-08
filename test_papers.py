@@ -14,7 +14,6 @@ __status__ = "Prototype"
 import pytest
 from papers import decide
 
-
 def test_basic():
     assert decide("test_returning_citizen.json", "watchlist.json", "countries.json") == ["Accept", "Accept"]
     assert decide("test_watchlist.json", "watchlist.json", "countries.json") == ["Secondary"]

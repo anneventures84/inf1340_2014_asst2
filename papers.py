@@ -26,7 +26,31 @@ def decide(input_file, watchlist_file, countries_file):
         an entry or transit visa is required, and whether there is currently a medical advisory
     :return: List of strings. Possible values of strings are: "Accept", "Reject", "Secondary", and "Quarantine"
     """
-    return ["Reject"]
+    with open(input_file, "r") as file_reader:
+
+        travelers_file = file_reader.read()
+        travelers_json = json.loads(travelers_file)
+
+    with open(watchlist_file, "r") as file_reader:
+        watchlist_contents = file_reader.read()
+        watchlist_json = json.loads(watchlist_contents)
+        result = []
+        
+    for passport in travelers_json:
+        traveler_passport = passport['passport']
+        found_in_watchlist = False
+        for passports in watchlist_json:
+            watchlist_passport = passports['passport']
+            if watchlist_passport == traveler_passport :
+                found_in_watchlist = True;
+        if found_in_watchlist:
+            result.append("reject")
+        else:
+            result.append("accept")
+
+    return result
+
+    #return ["Reject"]
 
 
 def valid_passport_format(passport_number):
@@ -39,6 +63,7 @@ def valid_passport_format(passport_number):
 
     if passport_format.match(passport_number):
         return True
+
     else:
         return False
 
@@ -54,3 +79,6 @@ def valid_date_format(date_string):
         return True
     except ValueError:
         return False
+
+x = decide("example_entries.json", "watchlist.json", "countries.json")
+print (x )
