@@ -15,19 +15,28 @@ import re
 import datetime
 import json
 
-
 def decide(input_file, watchlist_file, countries_file):
     """
     Decides whether a traveller's entry into Kanadia should be accepted
-
     :param input_file: The name of a JSON formatted file that contains cases to decide
     :param watchlist_file: The name of a JSON formatted file that contains names and passport numbers on a watchlist
     :param countries_file: The name of a JSON formatted file that contains country data, such as whether
         an entry or transit visa is required, and whether there is currently a medical advisory
     :return: List of strings. Possible values of strings are: "Accept", "Reject", "Secondary", and "Quarantine"
     """
-    return ["Reject"]
 
+        if traveller_status == 'Accept':
+            first_name = traveller['first_name']
+            last_name = traveller['last_name']
+            try:
+                traveller_visa_code = traveller['visa']['code']
+                traveller_visa_date = traveller['visa']['date']
+                valid_date = valid_date_format(traveller_visa_date)
+                if not valid_date:
+                    traveller_status = 'Reject'
+            except:
+                traveller_visa_code = ''
+                traveller_visa_date = ''
 
 def valid_passport_format(passport_number):
     """
@@ -54,20 +63,6 @@ def valid_date_format(date_string):
         return True
     except ValueError:
         return False
-
-
-        if traveller_status == 'Accept':
-            first_name = traveller['first_name']
-            last_name = traveller['last_name']
-            try:
-                traveller_visa_code = traveller['visa']['code']
-                traveller_visa_date = traveller['visa']['date']
-                valid_date = valid_date_format(traveller_visa_date)
-                if not valid_date:
-                    traveller_status = 'Reject'
-            except:
-                traveller_visa_code = ''
-                traveller_visa_date = ''
 
 def valid_country_list(home_country_code, from_country_code, via_country_code, traveller_entry_reason, date_today,
                        country_list,traveller_visa_code, traveller_visa_date):
