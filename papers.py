@@ -85,29 +85,29 @@ def decide(input_file, watchlist_file, countries_file):
                     result_for_each_person.append("reject")
 
                     #begin alternative fifth condition - transit visa validations
-if person['entry_reason'] == 'transit':
+                if person['entry_reason'] == 'transit':
 
-    via_country = person['via']['country'].upper()
+                    via_country = person['via']['country'].upper()
 
-     if countries_json[via_country]['transit_visa_required']:
+                     if countries_json[via_country]['transit_visa_required']:
 
-          person_visa_date = person['visa']['date']
+                          person_visa_date = person['visa']['date']
 
-          if valid_date_format(person_visa_date):
+                          if valid_date_format(person_visa_date):
 
-              date_today = datetime.date.today()
+                              date_today = datetime.date.today()
 
-              if (date_today.year -  person_visa_date)>= 2:
+                              if (date_today.year -  person_visa_date)>= 2:
 
-                  result_for_each_person.append('reject')
+                                  result_for_each_person.append('reject')
 
-             else:
+                             else:
 
-                result_for_each_person.append('accept')
+                                result_for_each_person.append('accept')
 
-         else:
+                         else:
 
-             result_for_each_person.append('accept')
+                             result_for_each_person.append('accept')
 
              #end alternative fifth condition
 
