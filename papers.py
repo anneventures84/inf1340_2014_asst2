@@ -35,7 +35,7 @@ def decide(input_file, watchlist_file, countries_file):
 
     result = []
 
-# first condition
+    # first condition
     for person in travelers_json:
         result_for_each_person = []
         traveler_passport = person['passport']
@@ -49,38 +49,48 @@ def decide(input_file, watchlist_file, countries_file):
         if found_in_watchlist:
             result_for_each_person.append("secondary")
 
-# second condition
-        #condition added to the if statement in condition 3
+        # second condition
+        # condition added to the if statement in condition 3
 
-# third condition
+        # third condition
         if person['first_name'] == '' \
-           or person['last_name'] == '' \
-           or (not valid_date_format(person['birth_date'])) \
-           or (not valid_passport_format(person['passport'])) \
-           or person['home']['city'] == '' \
-           or person['home']['country'] == '' or person['home']['region'] == '' \
-           or person['entry_reason'] == ''\
-           or person['from']['city'] == ''\
-           or person['from']['region'] == ''\
-           or person['from']['country'] == ''\
-           or person["entry_reason"] != "returning":
+                or person['last_name'] == '' \
+                or (not valid_date_format(person['birth_date'])) \
+                or (not valid_passport_format(person['passport'])) \
+                or person['home']['city'] == '' \
+                or person['home']['country'] == '' or person['home']['region'] == '' \
+                or person['entry_reason'] == '' \
+                or person['from']['city'] == '' \
+                or person['from']['region'] == '' \
+                or person['from']['country'] == '' \
+                or person["entry_reason"] != "returning":
             print(valid_passport_format(person['passport']))
             result_for_each_person.append("reject")
 
-#fourth condition
+        # fourth condition
         from_country = person['from']['country']
         if from_country in countries_json:
             medical_advisory = countries_json[from_country]['medical_advisory']
             if medical_advisory != '':
                 result_for_each_person.append('quarantine')
+                # Fifth Condition: check valid visa if the entry reason is visit or transit
+            if person['entry_reason'] == 'visit' or 'transit':
+                transit_visa = countries_json[from_country]['transit_visa_required']
+                visitor_visa = countries_json[from_country]['visitor_visa_required']
+                traveller_visa = person['visa']['date']
+                if transit_visa == '1' or visitor_visa == '1' \
+                        and datetime.year - traveller_visa.year < 2:
+                    result_for_each_person.append('accept')
+                else:
+                    result_for_each_person.append("reject")
 
-    if 'quarantine' in result_for_each_person:
+        if 'quarantine' in result_for_each_person:
             result.append('quarantine')
         elif 'reject' in result_for_each_person:
             result.append('reject')
         elif 'secondary' in result_for_each_person:
-            result.append('reject')
-        else
+            result.append('secondary')
+        else:
             result.append('accept')
 
     return result
@@ -115,6 +125,7 @@ def valid_date_format(date_string):
         return True
     except ValueError:
         return False
+
 
 x = decide("example_entries.json", "watchlist.json", "countries.json")
 print(x)
