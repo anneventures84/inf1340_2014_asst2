@@ -19,7 +19,6 @@ import json
 def decide(input_file, watchlist_file, countries_file):
     """
     Decides whether a traveller's entry into Kanadia should be accepted
-
     :param input_file: The name of a JSON formatted file that contains cases to decide
     :param watchlist_file: The name of a JSON formatted file that contains names and passport numbers on a watchlist
     :param countries_file: The name of a JSON formatted file that contains country data, such as whether
@@ -27,39 +26,76 @@ def decide(input_file, watchlist_file, countries_file):
     :return: List of strings. Possible values of strings are: "Accept", "Reject", "Secondary", and "Quarantine"
     """
     with open(input_file, "r") as file_reader:
-
         travelers_file = file_reader.read()
         travelers_json = json.loads(travelers_file)
 
     with open(watchlist_file, "r") as file_reader:
         watchlist_contents = file_reader.read()
         watchlist_json = json.loads(watchlist_contents)
-        result = []
-        
-    for passport in travelers_json:
-        traveler_passport = passport['passport']
+
+    with open(countries_file, "r") as file_reader:
+        countries_contents = file_reader.read()
+        countries_json = json.loads(countries_contents)
+
+    result = []
+
+# first condition
+    for person in travelers_json:
+        result_for_each_person = []
+        traveler_passport = person['passport']
+        last_name = person['last_name']
         found_in_watchlist = False
         for passports in watchlist_json:
             watchlist_passport = passports['passport']
-            if watchlist_passport == traveler_passport :
-                found_in_watchlist = True;
+            watchlist_name = passports['last_name']
+            if watchlist_passport == traveler_passport or watchlist_name == last_name:
+                found_in_watchlist = True
         if found_in_watchlist:
-            result.append("reject")
-        else:
-            result.append("accept")
+            result_for_each_person.append("secondary")
 
+# second condition
+        #condition added to the if statement in condition 3
+
+# third condition
+        if person['first_name'] == '' \
+           or person['last_name'] == '' \
+           or (not valid_date_format(person['birth_date'])) \
+           or (not valid_passport_format(person['passport'])) \
+           or person['home']['city'] == '' \
+           or person['home']['country'] == '' or person['home']['region'] == '' \
+           or person['entry_reason'] == ''\
+           or person['from']['city'] == ''\
+           or person['from']['region'] == ''\
+           or person['from']['country'] == ''\
+           or person["entry_reason"] != "returning":
+            print(valid_passport_format(person['passport']))
+            result_for_each_person.append("reject")
+
+#fourth condition
+        from_country = person['from']['country']
+        if from_country in countries_json:
+            medical_advisory = countries_json[from_country]['medical_advisory']
+            if medical_advisory != '':
+                result_for_each_person.append('quarantine')
+
+    if 'quarantine' in result_for_each_person:
+            result.append('quarantine')
+        elif 'reject' in result_for_each_person:
+            result.append('reject')
+        elif 'secondary' in result_for_each_person:
+            result.append('reject')
+        else
+            result.append('accept')
     return result
-
-    #return ["Reject"]
 
 
 def valid_passport_format(passport_number):
     """
-    Checks whether a pasport number is five sets of five alpha-number characters separated by dashes
+    Checks whether a passport number is five sets of five alpha-number characters separated by dashes
     :param passport_number: alpha-numeric string
     :return: Boolean; True if the format is valid, False otherwise
     """
-    passport_format = re.compile('.{5}-.{5}-.{5}-.{5}-.{5}')
+    passport_format = re.compile('^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$')
 
     if passport_format.match(passport_number):
         return True
@@ -80,5 +116,6 @@ def valid_date_format(date_string):
     except ValueError:
         return False
 
+
 x = decide("example_entries.json", "watchlist.json", "countries.json")
-print (x )
+print(x)
