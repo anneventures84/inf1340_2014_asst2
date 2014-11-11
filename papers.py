@@ -14,83 +14,101 @@ import json
 def decide(input_file, watchlist_file, countries_file):
     """
     Decides whether a traveller's entry into Kanadia should be accepted
-
-    :param input_file: The name of a JSON formatted file that contains cases to decide (i.e., example_entries.json)
-    :param watchlist_file: The name of a JSON formatted file that contains names and passport numbers on a watchlist (i.e., watchlist.json)
-    :param countries_file: The name of a JSON formatted file that contains country data, such as whether (i.e., countries.json)
+<<<<<<< HEAD
+    :param input_file: The name of a JSON formatted file that contains cases to decide
+    :param watchlist_file: The name of a JSON formatted file that contains names and passport numbers on a watchlist
+    :param countries_file: The name of a JSON formatted file that contains country data, such as whether
         an entry or transit visa is required, and whether there is currently a medical advisory
     :return: List of strings. Possible values of strings are: "Accept", "Reject", "Secondary", and "Quarantine"
     """
-    try:
-        with open(input_file, "r") as traveller_input:
-            travellers_file = traveller_input.read()
-            travellers_json = json.loads(travellers_file)
-    except:
-        raise FileNotFoundError
+    with open(input_file, "r") as file_reader:
+        travelers_file = file_reader.read()
+        travelers_json = json.loads(travelers_file)
 
-    try:
-        with open(watchlist_file, "r") as watchlist_input:
-                watchlist_contents = watchlist_input.read()
-                watchlist_json = json.loads(watchlist_contents)
-    except:
-        raise FileNotFoundError
-    try:
-        with open(countries_file, "r") as country_input:
-            country_contents = country_input.read()
-            country_list_json = json.loads(country_contents)
-    except:
-        raise FileNotFoundError
+    with open(watchlist_file, "r") as file_reader:
+        watchlist_contents = file_reader.read()
+        watchlist_json = json.loads(watchlist_contents)
+
+    with open(countries_file, "r") as file_reader:
+        countries_contents = file_reader.read()
+        countries_json = json.loads(countries_contents)
 
     result = []
-    date_today = datetime.date.today()
 
-    for traveller in travellers_json:
-        from_country_code = ''
-        via_country_code = ''
-        traveller_status = 'Accept'
-        try:
-            home_country_code = traveller['home']['country'].upper()
-        except ValueError:
-            traveller_status = 'Reject'
-        if traveller_status == 'Accept':
-            try:
-                from_country_code = traveller['from']['country'].upper()
-            except ValueError:
-                try:
-                    via_country_code = traveller['via']['country'].upper()
-                    from_country_code = ''
-                except ValueError:
-                    traveller_status = 'Reject'
-        if traveller_status == 'Accept':
-            first_name = traveller['first_name']
-            last_name = traveller['last_name']
-            try:
-                traveller_visa_code = traveller['visa']['code']
-                traveller_visa_date = traveller['visa']['date']
-                valid_date = valid_date_format(traveller_visa_date)
-                if not valid_date:
-                    traveller_status = 'Reject'
-            except ValueError:
-                traveller_visa_code = ''
-                traveller_visa_date = ''
-        if traveller_status == 'Accept':
-            traveller_entry_reason = traveller['entry_reason']
-            traveller_status = valid_country_list(home_country_code, from_country_code, via_country_code, traveller_entry_reason,
-                                                 date_today, country_list_json, traveller_visa_code, traveller_visa_date)
-        if traveller_status == 'Accept':
-            traveller_passport = traveller['passport'].upper()
-            valid_passport = valid_passport_format(traveller_passport)
-            if not valid_passport:
-                traveller_status = 'Reject'
-        if traveller_status == 'Accept':
-            traveller_birth_date = traveller['birth_date']
-            valid_date = valid_date_format(traveller_birth_date)
-            if not valid_date:
-                traveller_status = 'Reject'
-        if traveller_status == 'Accept':
-            traveller_status = watchlist(traveller_passport, first_name, last_name, watchlist_json)
-        result.append(traveller_status)
+# first condition
+    for person in travelers_json:
+        result_for_each_person = []
+        traveler_passport = person['passport']
+        last_name = person['last_name']
+        found_in_watchlist = False
+        for passports in watchlist_json:
+            watchlist_passport = passports['passport']
+            watchlist_name = passports['last_name']
+            if watchlist_passport == traveler_passport or watchlist_name == last_name:
+                found_in_watchlist = True
+        if found_in_watchlist:
+            result_for_each_person.append("secondary")
+
+# second condition
+        #condition added to the if statement in condition 3
+
+# third condition
+        if person['first_name'] == '' \
+           or person['last_name'] == '' \
+           or (not valid_date_format(person['birth_date'])) \
+           or (not valid_passport_format(person['passport'])) \
+           or person['home']['city'] == '' \
+           or person['home']['country'] == '' or person['home']['region'] == '' \
+           or person['entry_reason'] == ''\
+           or person['from']['city'] == ''\
+           or person['from']['region'] == ''\
+           or person['from']['country'] == ''\
+           or person["entry_reason"] != "returning":
+            print(valid_passport_format(person['passport']))
+            result_for_each_person.append("reject")
+
+#fourth condition
+        from_country = person['from']['country']
+        if from_country in countries_json:
+            medical_advisory = countries_json[from_country]['medical_advisory']
+            if medical_advisory != '':
+                result_for_each_person.append('quarantine')
+
+    if 'quarantine' in result_for_each_person:
+            result.append('quarantine')
+        elif 'reject' in result_for_each_person:
+            result.append('reject')
+        elif 'secondary' in result_for_each_person:
+            result.append('reject')
+        else
+            result.append('accept')
+
     return result
+
+#fifth condition - transit visa validations
+if person['entry_reason'] == 'transit':
+
+    via_country = person['via']['country'].upper()
+
+     if countries_json[via_country]['transit_visa_required']:
+
+          person_visa_date = person['visa']['date']
+
+          if valid_date_format(person_visa_date):
+
+              date_today = datetime.date.today()
+
+              if (date_today.year -  person_visa_date)>= 2:
+
+                  result_for_each_person.append('reject')
+
+             else:
+
+                result_for_each_person.append('accept')
+
+         else:
+
+             result_for_each_person.append('accept')
 
 
 def valid_passport_format(passport_number):
@@ -99,6 +117,9 @@ def valid_passport_format(passport_number):
     :param passport_number: alpha-numeric string
     :return: Boolean; True if the format is valid, False otherwise
     """
+
+    passport_format = re.compile('^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$')
+
     passport_format = re.compile('^.{5}-.{5}-.{5}-.{5}-.{5}$')
 
     if passport_format.match(passport_number):
@@ -120,72 +141,5 @@ def valid_date_format(date_string):
     except ValueError:
         return False
 
-def valid_country_list(home_country_code, from_country_code, via_country_code, traveller_entry_reason, date_today,
-                       country_list,traveller_visa_code, traveller_visa_date):
-    """
-    Checks whether the traveller needs an entry or transit visa is required, and whether there is currently a medical advisory
-    :param home_country_code: string home country of the traveller
-    :param from_country_code: string from country of the traveller
-    :param via_country_code: string via country of the traveller
-    :param traveller_entry_reason: string reason for travelling
-    :param date_today: date of processing
-    :param country_list: list of country with entry/visa requirements or has medical advisory
-    :param traveller_visa_code: string visa code/number
-    :param traveller_visa_date: date visa expiration date
-    :return: Quarantine country is in medical advisory; Reject if traveller has no entry permit or visa which is required by the destination country; Accept passed validations
-    """
-    if from_country_code != '':
-       validate_country = from_country_code
-    else:
-       if via_country_code != '':
-           validate_country = via_country_code
-       else:
-           return 'Reject'
-    try:
-        if country_list[validate_country]['medical_advisory'] != '':
-            country_traveller_status = 'Quarantine'
-        else:
-            country_traveller_status = 'Accept'
-    except:
-        country_traveller_status = 'Accept'
-    if country_traveller_status == 'Accept':
-        if home_country_code == 'KAN' and traveller_entry_reason == 'Returning':
-            country_traveller_status = 'Accept'
-        else:
-            try:
-                if (country_list[home_country_code]['visitor_visa_required'] == '1' or
-                    country_list[home_country_code]['transit_visa_required'] == '1'):
-                    if traveller_visa_code == "":
-                        country_traveller_status = 'Reject'
-                    else:
-                        if (date_today.year - traveller_visa_date.year)>= 2:
-                            country_traveller_status = 'Reject'
-                        else:
-                            country_traveller_status = 'Accept'
-            except:
-                country_traveller_status = 'Reject'
-    return country_traveller_status
-
-def watchlist(passport_number, first_name, last_name, watchlist):
-    """
-    Checks whether the traveller is in watch list
-    :param passport_number: string passport number of the traveller
-    :param first_name: string first name of the traveller
-    :param last_name: string last name of the traveller
-    :param watchlist: list of persons under watch list
-    :return: Secondary traveller is in watch list, Accept passed validations
-    """
-    watch_traveller_status = 'Accept'
-    for watch in watchlist:
-        if watch['passport'] == passport_number:
-            watch_traveller_status = 'Secondary'
-            break
-            if watch['first_name'] == first_name:
-                if watch['last_name'] == last_name:
-                    watch_traveller_status = 'Secondary'
-                    break
-    return watch_traveller_status
-
-
 x = decide("example_entries.json", "watchlist.json", "countries.json")
-print (x )
+print(x)
