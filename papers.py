@@ -77,12 +77,12 @@ def decide(input_file, watchlist_file, countries_file):
             if person['entry_reason'] == 'visit' or 'transit':
                 transit_visa = countries_json[from_country]['transit_visa_required']
                 visitor_visa = countries_json[from_country]['visitor_visa_required']
-                traveller_visa = person['visa']['date']
-                if transit_visa == '1' or visitor_visa == '1' \
-                        and datetime.year - traveller_visa.year < 2:
-                    result_for_each_person.append('accept')
-                else:
-                    result_for_each_person.append("reject")
+                if transit_visa == '1' or visitor_visa == '1':
+                    traveller_visa = person['visa']['date']
+                    if datetime.year - traveller_visa.year < 2:
+                        result_for_each_person.append('accept')
+                    else:
+                        result_for_each_person.append("reject")
 
         if 'quarantine' in result_for_each_person:
             result.append('quarantine')
