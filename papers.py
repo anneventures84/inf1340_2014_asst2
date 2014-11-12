@@ -21,17 +21,26 @@ def decide(input_file, watchlist_file, countries_file):
         an entry or transit visa is required, and whether there is currently a medical advisory
     :return: List of strings. Possible values of strings are: "Accept", "Reject", "Secondary", and "Quarantine"
     """
-    with open(input_file, "r") as file_reader:
-        travelers_file = file_reader.read()
-        travelers_json = json.loads(travelers_file)
+    try:
+        with open(input_file, "r") as file_reader:
+            travelers_file = file_reader.read()
+            travelers_json = json.loads(travelers_file)
+    except:
+        raise FileNotFoundError
 
-    with open(watchlist_file, "r") as file_reader:
-        watchlist_contents = file_reader.read()
-        watchlist_json = json.loads(watchlist_contents)
+    try:
+        with open(watchlist_file, "r") as file_reader:
+            watchlist_contents = file_reader.read()
+            watchlist_json = json.loads(watchlist_contents)
+    except:
+        raise FileNotFoundError
 
-    with open(countries_file, "r") as file_reader:
-        countries_contents = file_reader.read()
-        countries_json = json.loads(countries_contents)
+    try:
+        with open(countries_file, "r") as file_reader:
+            countries_contents = file_reader.read()
+            countries_json = json.loads(countries_contents)
+    except:
+        raise FileNotFoundError
 
     result = []
 
@@ -70,47 +79,30 @@ def decide(input_file, watchlist_file, countries_file):
         # fourth condition
         from_country = person['from']['country']
         if from_country in countries_json:
-            medical_advisory = countries_json[from_country]['medical_advisory']
-            if medical_advisory != '':
+            medical_advisory_from = countries_json[from_country]['medical_advisory']
+            if medical_advisory_from != '':
                 result_for_each_person.append('quarantine')
-                # Fifth Condition: check valid visa if the entry reason is visit or transit
-            if person['entry_reason'] == 'visit' or 'transit':
+
+            if 'via' in person:
+                via_country = person['via']['country']
+                medical_advisory_via = countries_json[via_country]['medical_advisory']
+                if medical_advisory_via != '':
+                    result_for_each_person.append('quarantine')
+
+                    # Fifth Condition: check valid visa if the entry reason is visit or transit
+            if person['entry_reason'] == 'visit' or person['entry_reason'] == 'transit':
+                visit_visa = countries_json[from_country]['visitor_visa_required']
                 transit_visa = countries_json[from_country]['transit_visa_required']
-                visitor_visa = countries_json[from_country]['visitor_visa_required']
-                if transit_visa == '1' or visitor_visa == '1':
-                    traveller_visa = person['visa']['date']
-                    if datetime.year - traveller_visa.year < 2:
-                        result_for_each_person.append('accept')
-                    else:
-                        result_for_each_person.append("reject")
+                if 'visa' in person:
+                    if visit_visa == '1' or transit_visa == '1':
+                        traveller_visa_date = person['visa']['date']
+                        traveller_visa_number = person['visa']['code']
+                        if valid_visa( traveller_visa_number,traveller_visa_date):
+                            result_for_each_person.append('accept')
+                        else:
+                            result_for_each_person.append("reject")
 
-                    #begin alternative fifth condition - transit visa validations
-                if person['entry_reason'] == 'transit':
-
-                    via_country = person['via']['country'].upper()
-
-                     if countries_json[via_country]['transit_visa_required']:
-
-                          person_visa_date = person['visa']['date']
-
-                          if valid_date_format(person_visa_date):
-
-                              date_today = datetime.date.today()
-
-                              if (date_today.year -  person_visa_date)>= 2:
-
-                                  result_for_each_person.append('reject')
-
-                             else:
-
-                                result_for_each_person.append('accept')
-
-                         else:
-
-                             result_for_each_person.append('accept')
-
-             #end alternative fifth condition
-
+        # checking traveller status according to priority
         if 'quarantine' in result_for_each_person:
             result.append('quarantine')
         elif 'reject' in result_for_each_person:
@@ -131,12 +123,39 @@ def valid_passport_format(passport_number):
     """
 
     passport_format = re.compile('^\w{5}-\w{5}-\w{5}-\w{5}-\w{5}$')
-
-    passport_format = re.compile('^.{5}-.{5}-.{5}-.{5}-.{5}$')
-
     if passport_format.match(passport_number):
         return True
 
+    else:
+        return False
+
+
+def valid_visa(visa_number, visa_date):
+    """
+    Checks whether a visa number is 2 sets of five alpha-number characters separated by dashes
+    :rtype : object
+    :param visa_number: alpha-numeric string
+    :return: Boolean; True if the format is valid, False otherwise
+    """
+
+    valid_format = False
+    valid_date = False
+
+    visa_format = re.compile('^\w{5}-\w{5}$')
+
+    if visa_format.match(visa_number):
+        valid_format = True
+
+    visa_years = datetime.datetime.now() - datetime.datetime.strptime(visa_date, "%Y-%m-%d")
+    visa_years_difference = visa_years.days / 365
+
+    if visa_years_difference < 2:
+        valid_date = True
+        # this if condition checks if the visa validity is less than two years
+
+    if valid_date and valid_format:
+        # return True only if visa has a valid format and is not over two years old
+        return True
     else:
         return False
 
