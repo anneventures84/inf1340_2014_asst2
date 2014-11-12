@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 
 """ Module to test papers.py  """
@@ -11,8 +12,10 @@ __license__ = "MIT License"
 __status__ = "Prototype"
 
 # imports one per line
+
 import pytest
 from papers import decide
+
 
 def test_basic():
     assert decide("test_returning_citizen.json", "watchlist.json", "countries.json") == ["Accept", "Accept"]
@@ -24,7 +27,7 @@ def test_invalid_passport():
     assert decide("test_passport.json", "watchlist.json", "countries.json") == ["Reject", "Reject"]
 
 def test_files():
-    with pytest.raises(FileNotFoundError):
+    with pytest(FileNotFoundError):
         decide("test_returning_citizen.json", "", "countries.json")
 
 # add functions for other tests
