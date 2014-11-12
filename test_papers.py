@@ -19,6 +19,9 @@ def test_basic():
     assert decide("test_watchlist.json", "watchlist.json", "countries.json") == ["Secondary"]
     assert decide("test_quarantine.json", "watchlist.json", "countries.json") == ["Quarantine"]
 
+#Testing traveler with invalid passport format
+def test_invalid_passport():
+    assert decide("test_passport.json", "watchlist.json", "countries.json") == ["Reject", "Reject"]
 
 def test_files():
     with pytest.raises(FileNotFoundError):
