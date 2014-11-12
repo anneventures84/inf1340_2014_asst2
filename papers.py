@@ -120,7 +120,7 @@ def decide(input_file, watchlist_file, countries_file):
             result.append('Quarantine')
         elif 'Reject' in result_for_each_person:
             result.append('Reject')
-        elif 'secondary' in result_for_each_person:
+        elif 'Secondary' in result_for_each_person:
             result.append('Secondary')
         else:
             result.append('Accept')
@@ -184,7 +184,3 @@ def valid_date_format(date_string):
         return True
     except ValueError:
         return False
-
-
-x = decide("test_quarantine.json", "watchlist.json", "countries.json")
-print(x)
