@@ -6,6 +6,7 @@ __author__ = 'Anne Simon and Rana ElSafadi'
 __email__ = "anne.simon@mail.utoronto.ca and rana.elsafadi@mail.utoronto.ca"
 
 # imports one per line
+
 import re
 import datetime
 import json
@@ -42,26 +43,29 @@ def decide(input_file, watchlist_file, countries_file):
     except:
         raise FileNotFoundError
 
+    # list to hold the final result for all entries
     result = []
-
-    # first condition
     for person in travelers_json:
+        # list to store all results for each entry in each condition
         result_for_each_person = []
         traveler_passport = person['passport']
         last_name = person['last_name']
         found_in_watchlist = False
+
+        # first condition: checking entries in watchlist file
         for passports in watchlist_json:
             watchlist_passport = passports['passport']
             watchlist_name = passports['last_name']
             if watchlist_passport == traveler_passport or watchlist_name == last_name:
                 found_in_watchlist = True
         if found_in_watchlist:
-            result_for_each_person.append("secondary")
+            result_for_each_person.append("Secondary")
 
-        # second condition
-        # condition added to the if statement in condition 3
+        # second condition: checking returning travellers
+        if person["entry_reason"] != "returning" and person['home']['country'] == 'KAN':
+            result_for_each_person.append("Accept")
 
-        # third condition
+        # third condition: testing the completeness of the required information
         if person['first_name'] == '' \
                 or person['last_name'] == '' \
                 or (not valid_date_format(person['birth_date'])) \
@@ -71,25 +75,34 @@ def decide(input_file, watchlist_file, countries_file):
                 or person['entry_reason'] == '' \
                 or person['from']['city'] == '' \
                 or person['from']['region'] == '' \
-                or person['from']['country'] == '' \
-                or person["entry_reason"] != "returning":
-            print(valid_passport_format(person['passport']))
-            result_for_each_person.append("reject")
+                or person['from']['country'] == '':
+            result_for_each_person.append("Reject")
 
-        # fourth condition
+        # checking completeness of the additional information
+        if 'via' in person:
+            if person['via']['city'] == '' \
+                    or person['via']['country'] == '' \
+                    or person['via']['region'] == '':
+                result_for_each_person.append("Reject")
+        if 'visa' in person:
+            if person['visa']['code'] == '' \
+                    or person['visa']['date'] == '':
+                result_for_each_person.append("Reject")
+
+        # fourth condition: checks medical advisory status of departure and transit countries
         from_country = person['from']['country']
         if from_country in countries_json:
             medical_advisory_from = countries_json[from_country]['medical_advisory']
             if medical_advisory_from != '':
-                result_for_each_person.append('quarantine')
+                result_for_each_person.append('Quarantine')
 
             if 'via' in person:
                 via_country = person['via']['country']
                 medical_advisory_via = countries_json[via_country]['medical_advisory']
                 if medical_advisory_via != '':
-                    result_for_each_person.append('quarantine')
+                    result_for_each_person.append('Quarantine')
 
-                    # Fifth Condition: check valid visa if the entry reason is visit or transit
+            # Fifth Condition: check valid visa if the entry reason is visit or transit
             if person['entry_reason'] == 'visit' or person['entry_reason'] == 'transit':
                 visit_visa = countries_json[from_country]['visitor_visa_required']
                 transit_visa = countries_json[from_country]['transit_visa_required']
@@ -97,20 +110,20 @@ def decide(input_file, watchlist_file, countries_file):
                     if visit_visa == '1' or transit_visa == '1':
                         traveller_visa_date = person['visa']['date']
                         traveller_visa_number = person['visa']['code']
-                        if valid_visa( traveller_visa_number,traveller_visa_date):
-                            result_for_each_person.append('accept')
+                        if valid_visa(traveller_visa_number, traveller_visa_date):
+                            result_for_each_person.append('Accept')
                         else:
-                            result_for_each_person.append("reject")
+                            result_for_each_person.append("Reject")
 
-        # checking traveller status according to priority
-        if 'quarantine' in result_for_each_person:
-            result.append('quarantine')
-        elif 'reject' in result_for_each_person:
-            result.append('reject')
+        # checking traveller result according to priority
+        if 'Quarantine' in result_for_each_person:
+            result.append('Quarantine')
+        elif 'Reject' in result_for_each_person:
+            result.append('Reject')
         elif 'secondary' in result_for_each_person:
-            result.append('secondary')
+            result.append('Secondary')
         else:
-            result.append('accept')
+            result.append('Accept')
 
     return result
 
@@ -173,5 +186,5 @@ def valid_date_format(date_string):
         return False
 
 
-x = decide("example_entries.json", "watchlist.json", "countries.json")
+x = decide("test_quarantine.json", "watchlist.json", "countries.json")
 print(x)
