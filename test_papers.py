@@ -34,8 +34,8 @@ def test_priority():
     assert decide("test_priority.json", "watchlist.json", "countries.json") == ["Quarantine"]
 
 #Testing if traveler will be accepted regardless of the lowercase passport and country code
-def test_upperlowercase():
-    assert decide("test_upperlowercase.json", "watchlist.json", "countries.json") == ["Accept"]
+def test_casing():
+    assert decide("test_casing.json", "watchlist.json", "countries.json") == ["Accept"]
 
 def test_files():
     with pytest.raises(FileNotFoundError):
